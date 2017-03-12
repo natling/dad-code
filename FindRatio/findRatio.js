@@ -4,47 +4,60 @@ var createFindRatio = function(factors) {
     if(k == factors.length) {
       return [[1, 1, 1]];
     }
-    var myratios = [];
+    var [c, m] = factors[k];
+    var ratios = [];
     var subratios = computeRatios(k + 1);
-    for(var i = 0; i <= factors[k][1]; ++i) {
-      for(var j = 0; j < subratios.length; ++j) {
-        var x = factors[k][0]**i * subratios[j][1];
-        var y = factors[k][0]**(factors[k][1] - i) * subratios[j][2];
-        var r = 1.0 * x / y;
-        myratios.push([r, x, y]);
+    for(var sub of subratios) {
+      var [r, x, y] = sub;
+      y *= c**m;
+      for(var i = 0; i <= m; ++i) {
+        ratios.push([1.0 * x / y, x, y]);
+        x *= c;
+        y /= c;
       }
     }
-    return myratios;
+    return ratios;
   };
 
   var ratios = computeRatios(0);
+  ratios.sort(function(a, b) { return a[0] - b[0]; })
 
-  var findRatio = function(targetRatio) {
-    var bestI = -1;
-    var bestR = 0;
-    for(var i = 0; i < ratios.length; ++i) {
-      var ratio = ratios[i][0];
-      var r = ratio > targetRatio ? ratio/targetRatio : targetRatio/ratio;
-      if(bestI == -1 || r < bestR) {
-        bestI = i;
-        bestR = r;
-      }
+  return function(targetRatio) {
+    // Find leftmost ratio greater than targetRatio, the result is in lo, 0<=lo<=N.
+    var lo = 0, hi = ratios.length;
+    while(lo < hi) {
+      var mid = (lo + hi) >> 1;
+      if(targetRatio < ratios[mid][0])
+        hi = mid;
+      else
+        lo = mid + 1;
     }
-    return ratios[bestI];
+    // Choose between lo and lo-1, handle corner cases lo=0 and lo=N.
+    var best = lo;
+    if(lo == ratios.length || (lo > 0 && targetRatio * targetRatio < ratios[lo-1][0] * ratios[lo][0])) {
+      best = lo - 1;
+    }
+    return ratios[best];
   };
-  
-  return findRatio;
 };
 
-var myfactors = [[2,7], [3,3], [5,2]]; // n = 86400;
-var findRatio = createFindRatio(myfactors);
 
-var test = function() {
-  for(var i = 1; i <= 50; ++i) {
-    var target = 0.1 * i;
-    var r = findRatio(target);
-    console.log([target, r]);
+// Test for a few sets of factors.
+var test = function(factors) {
+  var n = 1;
+  for(var f of factors) n *= f[0]**f[1];
+  console.log(["Test findRatio for factors", factors, "n", n]);
+  var findRatio = createFindRatio(factors);
+  var count = 0;
+  var target = 0.00001;
+  while(target <= 100000) {
+    count += 1;
+    var [r, x, y] = findRatio(target);
+    console.log([count, "target", target, "ratio", r, "ratio/target", r/target, "x", x, "y", y]);
+    target *= 1.5;
   }
 }
 
-// test();
+test([[2,7], [3,3], [5,2]]); // n = 86400
+test([[2,2], [3,2]]); // n = 36
+test([[2,1], [3,1], [5,1], [7,1], [11,1], [13,1]]); // n = 30030
