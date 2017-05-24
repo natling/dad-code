@@ -25,10 +25,11 @@ def random_words(n_words, length, min_word=1):
     lengths such that each word length is at least min_word (by default 1).
     """
     from random import sample
-    m = length - min_word * n_words - n_words + 1
+    m = length - n_words * min_word
     assert m >= n_words - 1
-    delim = [0] + sorted(sample(range(m), n_words - 1)) + [m]
-    return [b - a + min_word for a, b in zip(delim, delim[1:])]
+    delim = [-1] + sorted(sample(range(m), n_words - 1)) + [m]
+    print m, delim
+    return [b - a + min_word - 1 for a, b in zip(delim, delim[1:])]
     
 if __name__ == '__main__':
     from random import randrange
@@ -52,5 +53,6 @@ if __name__ == '__main__':
             s = ' '.join('x' * w for w in words)
             print words, repr(s)
 
+    test_random_words(3, 7, 1)
     test_random_words(3, 15, 1)
     test_random_words(5, 20, 1)
